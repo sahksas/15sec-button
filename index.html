@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>受付停止処理</title>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const BUTTON_DISABLE_TIME = 15 * 1000;
+        const button = document.getElementById("submit-button");
+        const message = document.getElementById("reload-message");
+
+        const now = Date.now();
+        const storedTime = sessionStorage.getItem("pageOpenedAt");
+
+        if (performance.getEntriesByType("navigation")[0].type === "reload") {
+          sessionStorage.setItem("pageOpenedAt", now);
+          enableButton();
+          setTimeout(disableButton, BUTTON_DISABLE_TIME);
+          return;
+        }
+
+        window.addEventListener("pageshow", function (event) {
+          if (event.persisted) {
+            disableButton();
+          }
+        });
+
+        if (!storedTime) {
+          sessionStorage.setItem("pageOpenedAt", now);
+          enableButton();
+          setTimeout(disableButton, BUTTON_DISABLE_TIME);
+        } else {
+          const elapsedTime = now - parseInt(storedTime, 10);
+          if (elapsedTime >= BUTTON_DISABLE_TIME) {
+            disableButton();
+          } else {
+            enableButton();
+            setTimeout(disableButton, BUTTON_DISABLE_TIME - elapsedTime);
+          }
+        }
+
+        document.addEventListener("visibilitychange", function () {
+          if (document.hidden) {
+            disableButton();
+          }
+        });
+
+        function disableButton() {
+          button.disabled = true;
+          message.style.display = "block";
+        }
+
+        function enableButton() {
+          button.disabled = false;
+          message.style.display = "none";
+        }
+      });
+    </script>
+    <style>
+      #reload-message {
+        display: none;
+        color: red;
+        font-weight: bold;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>フォーム送信画面</h2>
+    <button id="submit-button">送信</button>
+    <p id="reload-message">このページの有効期限が切れました。リロードしてください。</p>
+  </body>
+</html>
